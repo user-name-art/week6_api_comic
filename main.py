@@ -15,7 +15,7 @@ def get_image_by_url(photo_url):
 
 
 def get_random_comic_number():
-    last_comic_url = 'https://xkcd.com/614/info.0.json'
+    last_comic_url = 'https://xkcd.com/info.0.json'
 
     response = requests.get(last_comic_url)
     response.raise_for_status()
