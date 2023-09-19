@@ -1,6 +1,8 @@
 import os
 import requests
 import random
+
+from pathlib import Path
 from environs import Env
 
 
@@ -53,16 +55,17 @@ def upload_image_to_vk(group_id, token, url):
         response = requests.post(url, files=files)
     
     response.raise_for_status()
+    response_params = response.json()
     
-    return response.json()
+    return response_params['photo'], response_params['server'], response_params['hash']
 
 
-def save_image_to_vk(group_id, token, upload_image_data):
+def save_image_to_vk(group_id, token, vk_photo, vk_server, vk_hash):
     payload = {
         'group_id': group_id,
-        'photo': upload_image_data['photo'],
-        'server': upload_image_data['server'],
-        'hash': upload_image_data['hash'],
+        'photo': vk_photo,
+        'server': vk_server,
+        'hash': vk_hash,
         'access_token': token,
         'v': API_VERSION,
     }
@@ -72,15 +75,17 @@ def save_image_to_vk(group_id, token, upload_image_data):
     response = requests.post(url, data=payload)
     response.raise_for_status()
 
-    return response.json()['response'][0]
+    response_params = response.json()['response'][0]
+
+    return response_params['owner_id'], response_params['id']
 
 
-def post_image_to_wall(group_id, token, data, text):
+def post_image_to_wall(group_id, token, owner_id, media_id, text):
     payload = {
         'group_id': group_id,
         'owner_id': -group_id,
         'from_group': 1,
-        'attachments': f'photo{data["owner_id"]}_{data["id"]}',
+        'attachments': f'photo{owner_id}_{media_id}',
         'message': text,
         'access_token': token,
         'v': API_VERSION,
@@ -104,12 +109,12 @@ def main():
     save_image_to_disk(image)
 
     upload_url = get_upload_url_vk(group_id, token)
-    upload_image_data = upload_image_to_vk(group_id, token, upload_url)
-    save_image_data = save_image_to_vk(group_id, token, upload_image_data)
+    vk_photo, vk_server, vk_hash = upload_image_to_vk(group_id, token, upload_url)
+    owner_id, media_id = save_image_to_vk(group_id, token, vk_photo, vk_server, vk_hash)
 
-    post_image_to_wall(group_id, token, data=save_image_data, text=comic_text)
+    post_image_to_wall(group_id, token, owner_id, media_id, text=comic_text)
 
-    os.remove('./comic.png')
+    os.remove(Path.cwd() / 'comic.png')
 
 
 if __name__ == '__main__':
