@@ -7,14 +7,12 @@ from environs import Env
 API_VERSION = 5.131
 
 
-def get_image_by_url(photo_url):
-    response = requests.get(photo_url)
-    response.raise_for_status()
-
-    return response.content
+def save_image_to_disk(image):
+    with open('comic.png', 'wb') as file:
+        file.write(image)
 
 
-def get_random_comic_number():
+def get_random_comic():
     last_comic_url = 'https://xkcd.com/info.0.json'
 
     response = requests.get(last_comic_url)
@@ -22,20 +20,17 @@ def get_random_comic_number():
     number_of_comics = response.json()['num']
     random_comic_number = random.randint(1,number_of_comics)
 
-    return random_comic_number
+    comic_url = f'https://xkcd.com/{random_comic_number}/info.0.json'
+    response = requests.get(comic_url)
+    response.raise_for_status()    
 
+    random_comic_text = response.json()['alt']
+    random_comic_image_url = response.json()['img']
 
-def get_comic_data(comic_number):
-    url = f'https://xkcd.com/{comic_number}/info.0.json'
-    response = requests.get(url)
+    response = requests.get(random_comic_image_url)
     response.raise_for_status()
 
-    return response.json()
-
-
-def save_image_to_disk(image):
-    with open('comic.png', 'wb') as file:
-        file.write(image)
+    return response.content, random_comic_text
 
 
 def get_upload_url_vk(group_id, token):
@@ -104,10 +99,7 @@ def main():
     token = env.str('VK_ACCSESS_TOKEN')
     group_id = env.int('VK_GROUP_ID')
 
-    random_comic_number = get_random_comic_number()
-    comic_response_data = get_comic_data(random_comic_number)
-    comic_text = comic_response_data['alt']
-    image = get_image_by_url(comic_response_data['img'])
+    image, comic_text = get_random_comic()
     save_image_to_disk(image)
 
     upload_url = get_upload_url_vk(group_id, token)
