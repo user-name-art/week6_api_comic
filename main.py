@@ -51,7 +51,8 @@ def post_image_to_vk(group_id, token, url):
     with open('comic.png', 'rb') as file:
         files = {'photo': file}
         response = requests.post(url, files=files)
-        response.raise_for_status()
+    
+    response.raise_for_status()
     
     return response.json()
 
