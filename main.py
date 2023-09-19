@@ -9,9 +9,21 @@ from environs import Env
 API_VERSION = 5.131
 
 
+class VkError(Exception):
+    def __init__(self, error_code, error_message):
+        super().__init__(f'Error code: {error_code}, Error message: {error_message}')
+        self.error_code = error_code
+        self.error_message = error_message
+
+
 def save_image_to_disk(image):
     with open('comic.png', 'wb') as file:
         file.write(image)
+
+
+def check_vk_response(answer):
+    if 'error' in answer:
+        return True
 
 
 def get_random_comic():
@@ -46,6 +58,11 @@ def get_upload_url_vk(group_id, token):
     response = requests.get(url, params=payload)
     response.raise_for_status()
 
+    if check_vk_response(response.json()):
+        error_code = response.json()['error']['error_code']
+        error_message = response.json()['error']['error_msg']
+        raise VkError(error_code, error_message)
+
     return response.json()['response']['upload_url']
 
 
@@ -56,6 +73,11 @@ def upload_image_to_vk(group_id, token, url):
     
     response.raise_for_status()
     response_params = response.json()
+
+    if check_vk_response(response.json()):
+        error_code = response.json()['error']['error_code']
+        error_message = response.json()['error']['error_msg']
+        raise VkError(error_code, error_message)
     
     return response_params['photo'], response_params['server'], response_params['hash']
 
@@ -74,6 +96,11 @@ def save_image_to_vk(group_id, token, vk_photo, vk_server, vk_hash):
 
     response = requests.post(url, data=payload)
     response.raise_for_status()
+
+    if check_vk_response(response.json()):
+        error_code = response.json()['error']['error_code']
+        error_message = response.json()['error']['error_msg']
+        raise VkError(error_code, error_message)
 
     response_params = response.json()['response'][0]
 
@@ -96,6 +123,11 @@ def post_image_to_wall(group_id, token, owner_id, media_id, text):
     response = requests.post(url, data=payload)
     response.raise_for_status()
 
+    if check_vk_response(response.json()):
+        error_code = response.json()['error']['error_code']
+        error_message = response.json()['error']['error_msg']
+        raise VkError(error_code, error_message)
+
     return response.json()
 
 
@@ -105,16 +137,18 @@ def main():
     token = env.str('VK_ACCSESS_TOKEN')
     group_id = env.int('VK_GROUP_ID')
 
-    image, comic_text = get_random_comic()
-    save_image_to_disk(image)
+    try:
+        image, comic_text = get_random_comic()
+        save_image_to_disk(image)
+        
+        upload_url = get_upload_url_vk(group_id, token)
+        vk_photo, vk_server, vk_hash = upload_image_to_vk(group_id, token, upload_url)
+        owner_id, media_id = save_image_to_vk(group_id, token, vk_photo, vk_server, vk_hash)
 
-    upload_url = get_upload_url_vk(group_id, token)
-    vk_photo, vk_server, vk_hash = upload_image_to_vk(group_id, token, upload_url)
-    owner_id, media_id = save_image_to_vk(group_id, token, vk_photo, vk_server, vk_hash)
+        post_image_to_wall(group_id, token, owner_id, media_id, text=comic_text)
 
-    post_image_to_wall(group_id, token, owner_id, media_id, text=comic_text)
-
-    os.remove(Path.cwd() / 'comic.png')
+    finally:
+        os.remove(Path.cwd() / 'comic.png')
 
 
 if __name__ == '__main__':
