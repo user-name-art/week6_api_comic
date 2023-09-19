@@ -47,7 +47,7 @@ def get_upload_url_vk(group_id, token):
     return response.json()['response']['upload_url']
 
 
-def post_image_to_vk(group_id, token, url):
+def upload_image_to_vk(group_id, token, url):
     with open('comic.png', 'rb') as file:
         files = {'photo': file}
         response = requests.post(url, files=files)
@@ -104,7 +104,7 @@ def main():
     save_image_to_disk(image)
 
     upload_url = get_upload_url_vk(group_id, token)
-    upload_image_data = post_image_to_vk(group_id, token, upload_url)
+    upload_image_data = upload_image_to_vk(group_id, token, upload_url)
     save_image_data = save_image_to_vk(group_id, token, upload_image_data)
 
     post_image_to_wall(group_id, token, data=save_image_data, text=comic_text)
