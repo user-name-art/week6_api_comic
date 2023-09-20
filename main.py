@@ -16,7 +16,7 @@ class VkError(Exception):
         self.error_message = error_message
 
 
-def save_image_to_disk(image):
+def save_comic_image_to_disk(image):
     with open('comic.png', 'wb') as file:
         file.write(image)
 
@@ -73,7 +73,7 @@ def upload_image_to_vk(group_id, token, url):
         response = requests.post(url, files=files)
     
     response.raise_for_status()
-    
+
     response_params = response.json()
 
     check_vk_response(response_params)
@@ -132,7 +132,7 @@ def main():
 
     try:
         image, comic_text = get_random_comic()
-        save_image_to_disk(image)
+        save_comic_image_to_disk(image)
         
         upload_url = get_upload_url_vk(group_id, token)
         vk_photo, vk_server, vk_hash = upload_image_to_vk(group_id, token, upload_url)
