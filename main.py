@@ -119,9 +119,11 @@ def post_image_to_wall(group_id, token, owner_id, media_id, text):
     response = requests.post(url, data=payload)
     response.raise_for_status()
 
-    check_vk_response(response.json())
+    response_params = response.json()
 
-    return response.json()
+    check_vk_response(response_params)
+
+    return response_params
 
 
 def main():
