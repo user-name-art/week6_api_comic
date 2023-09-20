@@ -23,7 +23,9 @@ def save_image_to_disk(image):
 
 def check_vk_response(answer):
     if 'error' in answer:
-        return True
+        error_code = answer['error']['error_code']
+        error_message = answer['error']['error_msg']
+        raise VkError(error_code, error_message)
 
 
 def get_random_comic():
@@ -58,12 +60,11 @@ def get_upload_url_vk(group_id, token):
     response = requests.get(url, params=payload)
     response.raise_for_status()
 
-    if check_vk_response(response.json()):
-        error_code = response.json()['error']['error_code']
-        error_message = response.json()['error']['error_msg']
-        raise VkError(error_code, error_message)
+    response_params = response.json()
 
-    return response.json()['response']['upload_url']
+    check_vk_response(response_params)
+
+    return response_params['response']['upload_url']
 
 
 def upload_image_to_vk(group_id, token, url):
@@ -72,12 +73,10 @@ def upload_image_to_vk(group_id, token, url):
         response = requests.post(url, files=files)
     
     response.raise_for_status()
+    
     response_params = response.json()
 
-    if check_vk_response(response.json()):
-        error_code = response.json()['error']['error_code']
-        error_message = response.json()['error']['error_msg']
-        raise VkError(error_code, error_message)
+    check_vk_response(response_params)
     
     return response_params['photo'], response_params['server'], response_params['hash']
 
@@ -97,14 +96,11 @@ def save_image_to_vk(group_id, token, vk_photo, vk_server, vk_hash):
     response = requests.post(url, data=payload)
     response.raise_for_status()
 
-    if check_vk_response(response.json()):
-        error_code = response.json()['error']['error_code']
-        error_message = response.json()['error']['error_msg']
-        raise VkError(error_code, error_message)
+    response_params = response.json()
 
-    response_params = response.json()['response'][0]
+    check_vk_response(response_params)
 
-    return response_params['owner_id'], response_params['id']
+    return response_params['response'][0]['owner_id'], response_params['response'][0]['id']
 
 
 def post_image_to_wall(group_id, token, owner_id, media_id, text):
@@ -123,10 +119,7 @@ def post_image_to_wall(group_id, token, owner_id, media_id, text):
     response = requests.post(url, data=payload)
     response.raise_for_status()
 
-    if check_vk_response(response.json()):
-        error_code = response.json()['error']['error_code']
-        error_message = response.json()['error']['error_msg']
-        raise VkError(error_code, error_message)
+    check_vk_response(response.json())
 
     return response.json()
 
